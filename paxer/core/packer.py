@@ -1,8 +1,6 @@
-from typing import BinaryIO, Generator
+from typing import BinaryIO, Generator, Literal
 import os
 import htfbox as hbox
-
-
 
 class Password:
     def __init__(self, password:str):
@@ -20,8 +18,6 @@ class Password:
     
     def roll_next(self, value:int, dir:int=1) -> int:
         return (value + self.next()*dir) % 256
-
-
 
 # --- PACKER
 
@@ -48,17 +44,13 @@ def pack_file(pxd_file:BinaryIO, rel_path:str, source_path:str, password:Passwor
             # write to file
             pxd_file.write(bytes([b]))
 
-
-
 def pack_dir(pxd_file:BinaryIO, rel_path:str):
     
     # HEADER
     pxd_file.write( f"ED\0".encode()         ) # Directory
     pxd_file.write( f"{rel_path}\0".encode() ) # Path
 
-
-
-def pack_all(path:str, pxd_path:str, password:Password) -> Generator[tuple[str, str], None, None]:
+def pack_all(path:str, pxd_path:str, password:Password) -> Generator[tuple[str, Literal["file", "dir"]], None, None]:
     """Pack everything located in the folder
     Yields: (str)path, (str)type"""
 
@@ -86,11 +78,9 @@ def pack_all(path:str, pxd_path:str, password:Password) -> Generator[tuple[str, 
     
     pxd_file.close()
 
-
-
 # FREE
 
-def free_entry(pxd_file:BinaryIO, where:str, password:Password=None, read_only=False) -> tuple[str, str]:
+def free_entry(pxd_file:BinaryIO, where:str, password:Password=None, read_only=False) -> tuple[str, Literal["file", "dir"], str]:
 
     if password: password.reset()
 
@@ -126,9 +116,7 @@ def free_entry(pxd_file:BinaryIO, where:str, password:Password=None, read_only=F
                 os.makedirs(full_path, exist_ok=True)
             return rel_path, "dir"
 
-
-
-def free_all(pxd_path:str, where:str, password:Password=None, read_only=False) -> Generator[tuple[str, str], None, None]:
+def free_all(pxd_path:str, where:str, password:Password=None, read_only=False) -> Generator[tuple[str, ], None, None]:
 
     pxd_file = open(pxd_path, "rb")
 
@@ -137,8 +125,6 @@ def free_all(pxd_path:str, where:str, password:Password=None, read_only=False) -
         yield path, etype
     
     pxd_file.close()
-
-
 
 # --- HELPERS
 
@@ -154,15 +140,11 @@ def read_to_null(stream:BinaryIO, to_str:bool=False) -> bytes|str:
     if to_str: result = result.decode()
     return result
 
-
-
 def read_max(stream:BinaryIO, count:int) -> Generator[int, None, None]:
     for _ in range(count):
         b = stream.read(1)
         if not b: return
         yield b[0]
-
-
 
 def is_eof(stream:BinaryIO) -> bool:
     pos = stream.tell()
@@ -170,9 +152,16 @@ def is_eof(stream:BinaryIO) -> bool:
     stream.seek(pos)
     return eof
 
+def count_entries(path:str) -> tuple[int, int]:
+    """How much dirs, files are there?"""
 
+    dirs = 0
+    files = 0
 
-def count_entries(path:str) -> int:
-    total = 0
-    for _, _ in free_all(path, "", None, True): total += 1
-    return total
+    with open(path, "rb") as pxd_file:
+        for _, etype in free_all(path, "", None, True):
+            match etype:
+                case "dir": dirs += 1
+                case "file": files += 1
+    
+    return dirs, files

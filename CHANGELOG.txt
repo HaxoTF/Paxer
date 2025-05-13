@@ -1,5 +1,0 @@
-1.2
-- Solved folder problem
-
-1.1
-- Added password encryption

@@ -9,7 +9,7 @@ Current permissions:
 - You CAN install it into your system and use it as-is.
 - You CAN show the original version to some dudes "Hey! look at this shit I found!"
 - For personal non-commercial purposes: do what the hell you want.
-- Any other rights are reserved, ez?
+- Any other rights are reserved, ez? or just ask me.
 
 it can be installed via pip using this command:
 pip install htfpaxer
